@@ -1,19 +1,34 @@
-# Flashlight UI Anduril-2 based
+# Flashlight UI - TI Tiva C LaunchPad
 
-Create a simple flashlight single-click UI based on Anduril-2 UI by ToyKeeper. Test on Texas Intrument Tiva TM4C123G Development Board
+Simple LED control application for the EK-TM4C1294XL LaunchPad.
 
-GitHub repo:
+## Hardware
+- Board: TI Tiva C Connected LaunchPad (EK-TM4C1294XL)
+- MCU: TM4C1294NCPDT (ARM Cortex-M4F, 120MHz)
 
-https://github.com/ToyKeeper/anduril
+## Features
+- Blue LED (D3) heartbeat - blinks every 1 second
+- SW1 button toggles red LED (D1)
+- Serial output at 115200 baud
 
-UI chart:
+## Build and Upload
+```bash
+# PlatformIO is not in PATH, use full path:
+~/.platformio/penv/Scripts/platformio.exe run --target upload --target monitor
 
-https://www.reddit.com/r/flashlight/comments/sk1upj/and%C3%BAril_2_ui_chart/
+# Or on Windows:
+%USERPROFILE%\.platformio\penv\Scripts\platformio.exe run --target upload --target monitor
+```
 
-<img width="50%" alt="image" src="https://github.com/user-attachments/assets/08e90848-5474-4be9-a12e-0aa0489d7081" />
+## Pin Mapping
+- Red LED (D1): PN_1
+- Green LED (D2): PN_0
+- Blue LED (D3): PF_0
+- Button SW1: PJ_0
 
-Texas Intrument Tiva TM4C123G Development Board
+## Original Project Goal
 
-https://www.digikey.com/en/products/detail/texas-instruments/DK-TM4C123G/4383525
+This project was originally intended to implement an Anduril-2 based flashlight UI by ToyKeeper for testing on Texas Instrument Tiva development boards.
 
-<img width="50%" alt="image" src="https://github.com/user-attachments/assets/8bf4532c-9cec-4234-a8d1-9a6e19b5d95d" />
+- Anduril-2 GitHub: https://github.com/ToyKeeper/anduril
+- UI Chart: https://www.reddit.com/r/flashlight/comments/sk1upj/and%C3%BAril_2_ui_chart/
