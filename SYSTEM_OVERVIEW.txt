@@ -1,0 +1,98 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                  FLASHLIGHT UI - DISTRIBUTED SYSTEM READY                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+SYSTEM ARCHITECTURE:
+═════════════════════════════════════════════════════════════════════════════════
+
+   ┌─────────────────────────┐                    ┌──────────────────────────┐
+   │   TIVA BOARD            │                    │   RASPBERRY PI 4         │
+   │  TM4C1294XL             │                    │  (FreeRTOS Task Runtime) │
+   │                         │                    │                          │
+   │ ┌─────────────────────┐ │   USB Serial       │ ┌────────────────────┐  │
+   │ │ Button Input (PJ0)  │ │   /dev/ttyUSB0     │ │ Serial Receiver    │  │
+   │ │                     │ │◄─────────────────► │ │ Task               │  │
+   │ │ ┌──────────────────┤ │   115200 baud      │ │                    │  │
+   │ │ │ Red LED (PN_1)   │ │                    │ │ ┌────────────────┐ │  │
+   │ │ │ Green LED (PN_0) │ │                    │ │ │ LED Controller │ │  │
+   │ │ │ Blue LED (PF_0)  │ │   BTN_PRESSED      │ │ │ Task           │ │  │
+   │ │ │ (Heartbeat)      │ │◄─────────────────►│ │ │                │ │  │
+   │ │ └──────────────────┤ │   LED_TOGGLE       │ │ └────────────────┘ │  │
+   │ │                     │ │   LED_OK           │ │                    │  │
+   │ └─────────────────────┘ │                    │ │ ┌────────────────┐ │  │
+   │                         │                    │ │ │ Heartbeat      │ │  │
+   │ Arduino Framework       │                    │ │ │ Task           │ │  │
+   │ (Simple polling loop)   │                    │ │ └────────────────┘ │  │
+   │                         │                    │                      │  │
+   │ ✓ Firmware built        │                    │ ✓ Binary compiled    │  │
+   │ ✓ Ready to upload       │                    │ ✓ Ready to run       │  │
+   └─────────────────────────┘                    └──────────────────────────┘
+
+═════════════════════════════════════════════════════════════════════════════════
+
+WHAT'S NEW:
+═════════════════════════════════════════════════════════════════════════════════
+
+TIVA FIRMWARE (src/main.cpp):
+  Updated to send button events as "BTN_PRESSED"
+  Added serial command receiver for "LED_TOGGLE"
+  Sends "LED_OK" acknowledgment back
+
+PI4 SYSTEM:
+  Created ~/flashlight-freertos/ directory
+  FreeRTOS-style task scheduler (using Linux pthreads)
+  3 concurrent tasks with proper synchronization
+  Already compiled and ready to run
+
+DOCUMENTATION:
+
+═════════════════════════════════════════════════════════════════════════════════
+
+QUICK START:
+═════════════════════════════════════════════════════════════════════════════════
+
+1. UPLOAD TIVA FIRMWARE (Windows):
+   ~/.platformio/penv/Scripts/platformio.exe run --target upload
+
+2. RUN PI4 RELAY (SSH to Pi4):
+   cd ~/flashlight-freertos && sudo ./flashlight_relay
+
+3. TEST:
+   Press button on Tiva → Watch Pi4 terminal
+   Red LED on Tiva should toggle!
+
+═════════════════════════════════════════════════════════════════════════════════
+
+PIN CONNECTIONS:
+═════════════════════════════════════════════════════════════════════════════════
+
+HARDWARE WIRING:
+  Tiva ICDI Micro USB -----> Pi4 USB-A Port
+  (No GPIO pins to connect - USB serial only!)
+
+═════════════════════════════════════════════════════════════════════════════════
+
+COMMUNICATION PROTOCOL:
+═════════════════════════════════════════════════════════════════════════════════
+
+Tiva → Pi4:   "BTN_PRESSED\n"    (button pressed event)
+Pi4 → Tiva:   "LED_TOGGLE\n"     (command to toggle LED)
+Tiva → Pi4:   "LED_OK\n"         (acknowledgment)
+
+═════════════════════════════════════════════════════════════════════════════════
+
+FILES CREATED:
+═════════════════════════════════════════════════════════════════════════════════
+
+Windows Machine:
+  - src/main.cpp
+  - README_DISTRIBUTED.md
+  - SETUP_DISTRIBUTED.md
+
+Pi4 System:
+  - ~/flashlight-freertos/flashlight_relay.c 
+  - ~/flashlight-freertos/flashlight_relay
+  - ~/flashlight-freertos/Makefile
+  - ~/flashlight-freertos/README_DISTRIBUTED.md
+
+═════════════════════════════════════════════════════════════════════════════════

@@ -12,12 +12,18 @@ bool lastButtonState = HIGH;
 unsigned long lastHeartbeat = 0;
 bool heartbeatState = false;
 
+// Serial communication protocol
+#define CMD_BUTTON_PRESSED  "BTN_PRESSED"
+#define CMD_LED_TOGGLE      "LED_TOGGLE"
+#define CMD_LED_ACK         "LED_OK"
+
 void setup() {
     Serial.begin(115200);
     delay(500);
 
     Serial.println("\n========================================");
-    Serial.println("   Flashlight Demo - TM4C1294XL");
+    Serial.println("   Flashlight UI - Distributed System");
+    Serial.println("   Tiva (Button & LED Control)");
     Serial.println("========================================\n");
 
     // Initialize GPIO
@@ -47,7 +53,8 @@ void setup() {
 
     Serial.println("\n[Setup] Complete!");
     Serial.println("Blue LED (D3) = Heartbeat (blinks every second)");
-    Serial.println("SW1 Button = Toggle Red LED (D1)\n");
+    Serial.println("SW1 Button = Send event to Pi4");
+    Serial.println("Pi4 Commands: LED_TOGGLE to toggle Red LED (D1)\n");
 }
 
 void loop() {
@@ -62,15 +69,27 @@ void loop() {
     // Read button state
     bool currentButtonState = digitalRead(BUTTON_SW1);
 
-    // Detect button press (active low)
+    // Detect button press (active low) - send to Pi4
     if (currentButtonState == LOW && lastButtonState == HIGH) {
-        ledState = !ledState;
-        digitalWrite(LED_RED, ledState ? HIGH : LOW);
-
-        Serial.print("Button pressed! Red LED is now: ");
-        Serial.println(ledState ? "ON" : "OFF");
-
+        Serial.println(CMD_BUTTON_PRESSED);
+        Serial.flush();  // Ensure data is sent
         delay(300);  // Debounce
+    }
+
+    // Check for incoming commands from Pi4
+    if (Serial.available() > 0) {
+        String command = Serial.readStringUntil('\n');
+        command.trim();
+
+        if (command == CMD_LED_TOGGLE) {
+            ledState = !ledState;
+            digitalWrite(LED_RED, ledState ? HIGH : LOW);
+
+            Serial.print("[Tiva] LED toggled. State: ");
+            Serial.println(ledState ? "ON" : "OFF");
+            Serial.println(CMD_LED_ACK);
+            Serial.flush();
+        }
     }
 
     lastButtonState = currentButtonState;
