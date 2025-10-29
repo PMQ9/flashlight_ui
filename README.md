@@ -38,6 +38,8 @@ Press button SW1 on Tiva → Red LED toggles → Check Pi4 shows "LED_OK"
 
 **Serial**: 115200 baud, /dev/ttyACM0 (CDC ACM protocol)
 
+**PWM Brightness**: Red LED (D1) supports PWM brightness control (0-255)
+
 ## System Architecture
 
 ```
@@ -54,7 +56,13 @@ Tiva Board           Pi4 FreeRTOS Relay
 - 3 concurrent FreeRTOS-style tasks on Pi4
 - Mutex locks + Semaphore synchronization
 - Pre-compiled Pi4 binary ready to run (71KB)
-- Simple text protocol: BTN_PRESSED, LED_TOGGLE, LED_OK
+- Heartbeat: Double-flash every 10 seconds (low power indicator)
+- PWM brightness control: 0-255 for red LED
+- Simple text protocol:
+  - BTN_PRESSED (Tiva → Pi4)
+  - LED_TOGGLE (Pi4 → Tiva)
+  - BRIGHTNESS=0-255 (Pi4 → Tiva)
+  - LED_OK (acknowledgment)
 - Auto buffer-clearing for clean serial communication
 - Deploy to multiple Pi4s (just copy pi4-freertos/ directory)
 
@@ -75,10 +83,31 @@ cd pi4-freertos && ./flashlight_relay
 
 | Problem | Solution |
 |---------|----------|
-| Blue LED not blinking | Re-upload firmware, press RESET button |
+| Blue LED not blinking (heartbeat) | Re-upload firmware, press RESET button |
 | Red LED won't toggle | Check relay is running, try holding button longer |
+| Brightness control not working | Ensure Pi4 sends "BRIGHTNESS=X" command (0-255) |
 | Serial data corrupted | Normal on startup, relay auto-clears buffer |
 | Permission denied | Run with sudo or: `sudo chmod 666 /dev/ttyACM0` |
+
+## Button Controls (Intelligent UI)
+
+### From OFF State
+- **1 click**: Turn ON at Level 1 (25% brightness)
+
+### From ON State (any level)
+- **1 quick click**: Cycle to next brightness level (1→2→3→4→1)
+- **Hold button (500ms+)**: Rapid brightness cycling (auto-increment)
+- **Release after hold**: Stop at current brightness
+
+### Brightness Levels
+- Level 1: 25% brightness
+- Level 2: 50% brightness
+- Level 3: 75% brightness
+- Level 4: 100% brightness
+- (Then wraps back to Level 1)
+
+### Quick OFF
+- From any ON state: Quick 2nd click (< 250ms) after first click = Turn OFF
 
 ## Files
 
