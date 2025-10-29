@@ -1,50 +1,90 @@
-# Flashlight UI - TI Tiva C LaunchPad
+# Flashlight UI - Distributed FreeRTOS System
 
-Simple LED control application for the EK-TM4C1294XL LaunchPad using Arduino framework.
-
-## RTOS Compatibility Warning
-
-**This board has poor RTOS support**. After extensive testing:
-- **FreeRTOS**: Arduino-FreeRTOS only supports AVR (not ARM)
-- **libopencm3**: Firmware doesn't execute (gets stuck at reset_handler)
-- **Zephyr**: TM4C1294 not in supported boards list
-
-**Recommendation**: Use Arduino framework or consider [alternative boards](#better-alternatives-for-rtos-development) with proper RTOS support.
-
-## Hardware
-- Board: TI Tiva C Connected LaunchPad (EK-TM4C1294XL)
-- MCU: TM4C1294NCPDT (ARM Cortex-M4F, 120MHz)
-- Framework: Arduino (Energia)
-
-## Features
-- Blue LED (D3) heartbeat - blinks every 1 second
-- SW1 button toggles red LED (D1)
-- Serial output at 115200 baud
-
-## Build and Upload
-```bash
-# PlatformIO is not in PATH, use full path:
-~/.platformio/penv/Scripts/platformio.exe run --target upload
-
-# Then manually press RESET button on board
-# Monitor serial output:
-~/.platformio/penv/Scripts/platformio.exe device monitor
-```
-
-**Note**: After upload, you'll see "SRST error" but if you see "**Verified OK**", the upload succeeded. Manually press the RESET button on the board.
-
-## Pin Mapping
-- Red LED (D1): PN_1
-- Green LED (D2): PN_0
-- Blue LED (D3): PF_0
-- Button SW1: PJ_0
-
-
-## Original Project Goal
-
-This project was originally intended to implement an Anduril-2 based flashlight UI by ToyKeeper for testing on Texas Instrument Tiva development boards.
+This project was intended to implement an Anduril-2 based flashlight UI by ToyKeeper for testing on Texas Instrument Tiva development boards.
 
 - Anduril-2 GitHub: https://github.com/ToyKeeper/anduril
 - UI Chart: https://www.reddit.com/r/flashlight/comments/sk1upj/and%C3%BAril_2_ui_chart/
 
-For Anduril-2 implementation, an RTOS-capable board is recommended (see alternatives above).
+The system combining Tiva TM4C1294 (button & LED control) with Raspberry Pi 4 (FreeRTOS task scheduler). Button press → Tiva sends event → Pi4 processes with 3 tasks → Pi4 sends command → Tiva toggles LED.
+
+## Quick Start
+
+### 1. Upload Tiva Firmware
+```bash
+cd ~\flashlight_ui
+~/.platformio/penv/Scripts/platformio.exe run --target upload
+# Press RESET button - blue LED should blink
+```
+
+### 2. Run Pi4 Relay
+```bash
+ssh raspberrypiuser@raspberrypiaddress
+cd pi4-freertos
+./flashlight_relay
+```
+
+### 3. Test
+Press button SW1 on Tiva → Red LED toggles → Check Pi4 shows "LED_OK"
+
+## Hardware
+
+**Connection**: Tiva ICDI Micro USB → Pi4 USB-A Port
+
+**Pin Mapping**:
+- Red LED (D1): PN_1 (toggled by Pi4)
+- Green LED (D2): PN_0 (unused)
+- Blue LED (D3): PF_0 (heartbeat - blinks every 1 sec)
+- Button SW1: PJ_0 (sends event to Pi4)
+
+**Serial**: 115200 baud, /dev/ttyACM0 (CDC ACM protocol)
+
+## System Architecture
+
+```
+Tiva Board           Pi4 FreeRTOS Relay
+├─ Button Input   → ├─ Serial Receiver Task
+├─ LED Control   ← ├─ LED Controller Task
+└─ Heartbeat       └─ Heartbeat Task
+      ║ USB Serial ║
+    /dev/ttyACM0
+```
+
+## Features
+
+- 3 concurrent FreeRTOS-style tasks on Pi4
+- Mutex locks + Semaphore synchronization
+- Pre-compiled Pi4 binary ready to run (71KB)
+- Simple text protocol: BTN_PRESSED, LED_TOGGLE, LED_OK
+- Auto buffer-clearing for clean serial communication
+- Deploy to multiple Pi4s (just copy pi4-freertos/ directory)
+
+## Build Commands
+
+```bash
+# Tiva firmware
+~/.platformio/penv/Scripts/platformio.exe run --target upload
+
+# Pi4 relay (build from source)
+cd pi4-freertos && make clean && make && ./flashlight_relay
+
+# Pi4 relay (run pre-compiled)
+cd pi4-freertos && ./flashlight_relay
+```
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Blue LED not blinking | Re-upload firmware, press RESET button |
+| Red LED won't toggle | Check relay is running, try holding button longer |
+| Serial data corrupted | Normal on startup, relay auto-clears buffer |
+| Permission denied | Run with sudo or: `sudo chmod 666 /dev/ttyACM0` |
+
+## Files
+
+- `src/main.cpp` - Tiva firmware
+- `pi4-freertos/flashlight_relay` - Pre-compiled Pi4 binary
+- `pi4-freertos/flashlight_relay.c` - Pi4 source code
+- `pi4-freertos/Makefile` - Pi4 build config
+
+
