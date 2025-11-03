@@ -1,9 +1,10 @@
 #include <Arduino.h>
 
 // Pin definitions for EK-TM4C1294XL LaunchPad
-#define LED_RED     PN_1    // Red LED (D1)
-#define LED_GREEN   PN_0    // Green LED (D2)
-#define LED_BLUE    PF_0    // Blue LED (D3)
+#define LED_RED     PN_1    // Red LED (D1) - Built-in
+#define LED_GREEN   PN_0    // Green LED (D2) - Built-in
+#define LED_BLUE    PF_0    // Blue LED (D3) - Built-in
+#define LED_EXTERNAL PE_4   // External LED (user-connected)
 #define BUTTON_SW1  PJ_0    // SW1 button
 
 // Brightness levels (5 levels: 25%, 50%, 75%, 100%, then cycle back)
@@ -37,16 +38,19 @@ void setup() {
     pinMode(LED_RED, OUTPUT);
     pinMode(LED_GREEN, OUTPUT);
     pinMode(LED_BLUE, OUTPUT);
+    pinMode(LED_EXTERNAL, OUTPUT);
     pinMode(BUTTON_SW1, INPUT_PULLUP);
 
-    // Setup PWM for red LED on PN_1 (supports PWM)
+    // Setup PWM for red LED on PN_1 and external LED on PE_4 (both support PWM)
     // Note: TM4C1294 supports PWM on most GPIO pins
     analogWrite(LED_RED, 0);  // Start off
+    analogWrite(LED_EXTERNAL, 0);  // Start off
 
     // Turn all LEDs off
     digitalWrite(LED_RED, LOW);
     digitalWrite(LED_GREEN, LOW);
     digitalWrite(LED_BLUE, LOW);
+    digitalWrite(LED_EXTERNAL, LOW);
 
     // Double flash blue LED to show startup
     Serial.println("[Setup] Heartbeat double-flash (startup indicator)...");
@@ -60,7 +64,8 @@ void setup() {
 
     Serial.println("\n[Setup] Complete!");
     Serial.println("Blue LED (D3) = Heartbeat (double-flash every 10 seconds)");
-    Serial.println("Red LED (D1) = Flashlight with 4 brightness levels");
+    Serial.println("Red LED (D1) = Flashlight with 4 brightness levels (built-in)");
+    Serial.println("External LED (PE_4) = Mirrors red LED brightness (user-connected)");
     Serial.println("\nButton Controls:");
     Serial.println("  OFF state:     1 click = Turn ON at Level 1 (25%)");
     Serial.println("  ON state:      1 click = Turn OFF");
@@ -111,6 +116,7 @@ void loop() {
         // Cycle through brightness levels slowly while held (500ms per level)
         currentLevel = (currentLevel + 1) % BRIGHTNESS_LEVELS;
         analogWrite(LED_RED, brightnessLevels[currentLevel]);
+        analogWrite(LED_EXTERNAL, brightnessLevels[currentLevel]);  // Mirror brightness to external LED
         Serial.print("[Button] Hold: Level ");
         Serial.print(currentLevel + 1);
         Serial.print(" - ");
@@ -139,12 +145,14 @@ void loop() {
                 ledState = true;
                 currentLevel = 0;  // Reset to level 1
                 analogWrite(LED_RED, brightnessLevels[currentLevel]);
+                analogWrite(LED_EXTERNAL, brightnessLevels[currentLevel]);  // Mirror brightness to external LED
                 Serial.println("[Button] Click: LED ON at Level 1 (25%)");
             }
             else {
                 // LED is ON - turn OFF
                 ledState = false;
                 analogWrite(LED_RED, 0);
+                analogWrite(LED_EXTERNAL, 0);  // Turn off external LED
                 Serial.println("[Button] Click: LED OFF");
             }
         }
